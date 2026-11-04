@@ -130,6 +130,20 @@ python analisis/graficar.py resultados/demo
 - `graficar.py` dibuja las trayectorias y las estimaciones en `escena.png` (necesita que antes se haya
   corrido `localizar.py`, porque lee `estimaciones.csv`).
 
+`graficar.py` permite elegir otra ruta de salida y un título con `--salida ruta.png` y `--titulo
+"texto"`; si se omiten, mantiene `escena.png` dentro de la corrida. Tras ejecutar los escenarios y
+generar sus CSV agregados, usa:
+
+```bash
+python analisis/graficas_comparativas.py
+```
+
+El script produce las gráficas comparativas en `entregables/f-experimentacion/figuras/` y un
+`intervalos_confianza.csv` por escenario. Los intervalos son del 95% para la media entre réplicas,
+calculados con t de Student; los valores no disponibles se omiten y cada fila registra el tamaño de
+muestra válido. Las barras de estas gráficas representan IC95%; `graficar.py`, en cambio, muestra
+una corrida individual.
+
 ## 4. Tabla de parámetros
 
 Todos los parámetros están en `codigo/escenarios/base.conf`, con su valor por defecto y un comentario. La
@@ -288,7 +302,9 @@ Cada corrida deja en su carpeta `--outDir`:
 | `netanim.xml` | La animación para NetAnim, solo con `--netanim=true` |
 
 Los scripts de análisis agregan a esa misma carpeta: `estimaciones.csv` y `resumen.csv` (de
-`localizar.py`), `resumen_red.csv` (de `red.py`) y `escena.png` (de `graficar.py`).
+`localizar.py`), `resumen_red.csv` (de `red.py`) y `escena.png` (de `graficar.py`). El experimento
+factorial genera `experimento.csv` y `experimento_red.csv`; `graficas_comparativas.py` escribe además
+`intervalos_confianza.csv` para cada escenario.
 
 ## 7. Ver la animación en NetAnim
 
@@ -312,6 +328,7 @@ clúster, cabeza de zona y dueño.
 | `--estimator=python necesita ns3-ai` | ns-3 se compiló sin ns3-ai (faltaba Boost, protobuf o pybind11). Instálenlos y corran `./instalar.sh` otra vez. |
 | Una corrida con el estimador en Python que no termina | El lanzador corta la espera si la simulación muere sin avisar. Si aun así queda algo corriendo, `pkill -f collar-sim` lo detiene. |
 | `graficar.py` falla porque falta `estimaciones.csv` | Corran antes `python analisis/localizar.py <carpeta>`. |
+| `graficas_comparativas.py` no encuentra un escenario | Comprueben que existan `experimento.csv` y `experimento_red.csv` para cada nivel de E1–E4 en la carpeta indicada por `--resultados`. |
 | La simulación aborta con un mensaje de parámetro inválido | Revisen el valor: `routing` debe ser `aodv`/`olsr`/`dsdv`, `estMethod` uno de los tres métodos, `zoneFusion` `none`/`raw`/`merge`, `nodesPerCluster` ≥ 2. |
 
 Los problemas de instalación (macOS, WSL, NetAnim) están en la parte II y en `INSTALACION.md`.

@@ -28,6 +28,7 @@ sys.path.insert(0, str(AQUI))
 from localizar import METODOS, analizar  # noqa: E402
 from red import resumir_red  # noqa: E402
 from rutas import BINARIO, CODIGO, NS3_DIR, absolutizar  # noqa: E402
+from estadistica import intervalo_media_ic95  # noqa: E402
 
 COMBINACIONES = [
     # (etiqueta, clusterMobility, nodeMobility)
@@ -58,15 +59,18 @@ def correr(routing: str, etiqueta: str, cm: int, nm: int, rep: int, base: Path, 
 
 
 def tabla(filas: list[dict], metrica: str, columnas: list[str], col_clave: str, filtro: dict) -> None:
-    print(f"{'':<14}" + "".join(f"{c:>20}" for c in columnas))
+    print(f"{'':<14}" + "".join(f"{c:>28}" for c in columnas))
     for etiqueta, _, _ in COMBINACIONES:
         celdas = []
         for c in columnas:
             v = np.array([f[metrica] for f in filas if f["combinacion"] == etiqueta and f[col_clave] == c
                           and all(f[k] == x for k, x in filtro.items())], dtype=float)
-            v = v[~np.isnan(v)]
-            celdas.append(f"{v.mean():.2f} ± {v.std(ddof=1):.2f}" if len(v) > 1 else "—")
-        print(f"{etiqueta:<14}" + "".join(f"{c:>20}" for c in celdas))
+            n, media, _, inferior, superior = intervalo_media_ic95(v)
+            celdas.append(
+                f"{media:.2f} [{inferior:.2f}, {superior:.2f}]"
+                if n > 1 else f"{media:.2f} [IC no disp.; n={n}]" if n else "—"
+            )
+        print(f"{etiqueta:<14}" + "".join(f"{c:>28}" for c in celdas))
 
 
 def main() -> None:
@@ -120,7 +124,7 @@ def main() -> None:
             w.writerows(filas)
     (base / "comando.txt").write_text(" ".join(sys.argv) + "\n")
 
-    print(f"\n{base}  ({args.reps} réplicas; media ± desviación entre réplicas)")
+    print(f"\n{base}  ({args.reps} réplicas; media [IC95% t de Student])")
     for rt in args.routing:
         print(f"\n[{rt}] error mediano de localización fuera de línea (m)")
         tabla(filas_loc, "error_mediana_m", list(METODOS), "metodo", {"routing": rt})

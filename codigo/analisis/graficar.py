@@ -1,13 +1,13 @@
 """Dibuja una corrida: trayectorias por clúster, el perro y las estimaciones de cada método.
 
 Uso:
-  python analisis/graficar.py resultados/<corrida>   (necesita estimaciones.csv)
+  python analisis/graficar.py resultados/<corrida> [--salida ruta.png] [--titulo texto]
 
-Escribe <corrida>/escena.png.
+Necesita estimaciones.csv. Por defecto escribe <corrida>/escena.png.
 """
 
+import argparse
 import csv
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -21,7 +21,14 @@ MARCAS = {"cercano": "x", "centroide": "^", "trilateracion": "o"}
 
 
 def main() -> None:
-    corrida = Path(sys.argv[1])
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("corrida", type=Path)
+    parser.add_argument("--salida", type=Path, help="ruta del PNG (por defecto, corrida/escena.png)")
+    parser.add_argument("--titulo", help="título alternativo para la figura")
+    args = parser.parse_args()
+    corrida = args.corrida
+    salida = args.salida or corrida / "escena.png"
+
     nombres = {}
     with open(corrida / "nodos.csv") as f:
         for r in csv.DictReader(f):
@@ -79,11 +86,13 @@ def main() -> None:
     ax.set_aspect("equal")
     ax.set_xlabel("x (m)")
     ax.set_ylabel("y (m)")
-    ax.set_title(corrida.name)
+    ax.set_title(args.titulo or corrida.name)
     ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=8)
     fig.tight_layout()
-    fig.savefig(corrida / "escena.png", dpi=130)
-    print(corrida / "escena.png")
+    salida.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(salida, dpi=130)
+    plt.close(fig)
+    print(salida)
 
 
 if __name__ == "__main__":
