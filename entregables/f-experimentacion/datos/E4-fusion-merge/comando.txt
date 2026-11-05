@@ -1,0 +1,1 @@
+analisis/experimento.py --nombre E4-fusion-merge --reps 10 --routing aodv olsr dsdv --jobs 20 --sin-compilar -- --conf=/mnt/c/Proyectos/ME01-taller01-manets/codigo/escenarios/E4-fusion-merge.conf
