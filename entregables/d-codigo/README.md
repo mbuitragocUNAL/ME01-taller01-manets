@@ -28,5 +28,11 @@ Versiones con las que se desarrolló, medidas el 29 de octubre de 2026 en un Mac
 ns-3 se usa sin cambios. `instalar.sh` solo compila un subconjunto de módulos y desactiva el enlazador rápido
 `lld`, que en macOS no sabe enlazar contra la libc++ del sistema.
 
+En `codigo/analisis/` están los scripts para estimación fuera de línea (`localizar.py`), métricas de
+red (`red.py`), escenas de corridas individuales (`graficar.py`), diseño factorial (`experimento.py`)
+y comparaciones con IC95% (`graficas_comparativas.py`, que comparte el cálculo con `estadistica.py`).
+El [informe de experimentación](../f-experimentacion/experimentacion.md) documenta sus comandos,
+archivos generados y figuras.
+
 Cómo instalar y correr todo va en el manual técnico, literal e. [INSTALACION.md](../../INSTALACION.md) sirve
 de base.

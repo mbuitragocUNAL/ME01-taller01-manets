@@ -228,6 +228,10 @@ Ns3AiMsgInterfaceImpl<collar::Peticion, collar::Respuesta>* g_ai = nullptr;
 #endif
 uint64_t g_aiTruncated = 0; // ventanas con más de kMaxLecturas lecturas
 Ptr<MobilityModel> g_dogMm;
+AnimationInterface* g_anim = nullptr;
+std::vector<Ptr<Node>> g_estimationMarkerNodes;
+std::vector<Ptr<ConstantPositionMobilityModel>> g_estimationMarkerModels;
+std::vector<bool> g_estimationMarkerVisible;
 Ptr<NormalRandomVariable> g_gpsNoise;
 Ptr<UniformRandomVariable> g_appJitter;
 std::ofstream g_rssiOut;
@@ -533,6 +537,37 @@ EstimateTick(uint32_t zoneHead)
         g_estOut << ",," << dog.x << "," << dog.y << ",";
     }
     g_estOut << "," << keep.size() << "," << observers.size() << "\n";
+
+    if (g_anim && zone >= 0 && static_cast<std::size_t>(zone) < g_estimationMarkerModels.size())
+    {
+        std::size_t markerIndex = static_cast<std::size_t>(zone);
+        Ptr<Node> marker = g_estimationMarkerNodes[markerIndex];
+        if (res.valido)
+        {
+            g_estimationMarkerModels[markerIndex]->SetPosition(Vector(res.x, res.y, 0));
+            if (!g_estimationMarkerVisible[markerIndex])
+            {
+                g_anim->UpdateNodeColor(marker,
+                                        markerIndex == 0 ? 255 : 0,
+                                        markerIndex == 0 ? 0 : 210,
+                                        markerIndex == 0 ? 255 : 210);
+                g_anim->UpdateNodeDescription(marker,
+                                              markerIndex == 0 ? "EST-S" : "EST-N");
+                g_estimationMarkerVisible[markerIndex] = true;
+            }
+        }
+        else if (g_estimationMarkerVisible[markerIndex])
+        {
+            Vector zoneCenter(kZoneWidth / 2,
+                              kZones[markerIndex].origin.y + kZoneHeight / 2,
+                              0);
+            g_estimationMarkerModels[markerIndex]->SetPosition(zoneCenter);
+            g_anim->UpdateNodeColor(marker, 130, 130, 130);
+            g_anim->UpdateNodeDescription(marker,
+                                          markerIndex == 0 ? "EST-S sin dato" : "EST-N sin dato");
+            g_estimationMarkerVisible[markerIndex] = false;
+        }
+    }
 
     if (res.valido)
     {
@@ -1224,10 +1259,27 @@ main(int argc, char* argv[])
                     MakeCallback(&SnifferRx));
     Simulator::Schedule(Seconds(0), &LogPositions, allNodes, Seconds(posLogInterval));
 
+    if (netanim)
+    {
+        for (const auto& zone : kZones)
+        {
+            Ptr<Node> marker = CreateObject<Node>();
+            Ptr<ConstantPositionMobilityModel> mobility =
+                CreateObject<ConstantPositionMobilityModel>();
+            mobility->SetPosition(
+                Vector(kZoneWidth / 2, zone.origin.y + kZoneHeight / 2, 0));
+            marker->AggregateObject(mobility);
+            g_estimationMarkerNodes.push_back(marker);
+            g_estimationMarkerModels.push_back(mobility);
+            g_estimationMarkerVisible.push_back(false);
+        }
+    }
+
     std::unique_ptr<AnimationInterface> anim;
     if (netanim)
     {
         anim = std::make_unique<AnimationInterface>(outDir + "/netanim.xml");
+        g_anim = anim.get();
         anim->SetMobilityPollInterval(Seconds(0.5));
         anim->SkipPacketTracing();
         for (uint32_t c = 0; c < kClusters.size(); ++c)
@@ -1236,18 +1288,14 @@ main(int argc, char* argv[])
             {
                 Ptr<Node> n = clusterNodes[c].Get(k);
                 const NodeInfo& info = g_nodeInfo[n->GetId()];
-                std::string label = kClusters[c].name;
+                std::string label = " ";
                 if (info.zoneHead)
                 {
-                    label += " [cabeza zona]";
+                    label = info.zone == 0 ? "HZ-S" : "HZ-N";
                 }
-                else if (info.clusterHead)
+                else if (info.owner)
                 {
-                    label += " [cabeza]";
-                }
-                if (info.owner)
-                {
-                    label += " [dueño]";
+                    label = "D";
                 }
                 anim->UpdateNodeColor(n, kClusters[c].r, kClusters[c].g, kClusters[c].b);
                 anim->UpdateNodeDescription(n, label);
@@ -1256,8 +1304,17 @@ main(int argc, char* argv[])
             }
         }
         anim->UpdateNodeColor(collars.Get(0), 230, 20, 20);
-        anim->UpdateNodeDescription(collars.Get(0), "collar");
+        anim->UpdateNodeDescription(collars.Get(0), "REAL");
         anim->UpdateNodeSize(collars.Get(0), 6.0, 6.0);
+        for (std::size_t i = 0; i < g_estimationMarkerNodes.size(); ++i)
+        {
+            const auto& marker = g_estimationMarkerNodes[i];
+            const auto& zone = kZones[i];
+            anim->UpdateNodeColor(marker, 130, 130, 130);
+            anim->UpdateNodeDescription(marker,
+                                        zone.name == "sur" ? "EST-S sin dato" : "EST-N sin dato");
+            anim->UpdateNodeSize(marker, 8.0, 8.0);
+        }
     }
 
     // ------------------------------------------------------------ correr

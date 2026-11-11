@@ -61,6 +61,12 @@ comandos leen esa carpeta:
 - `red.py` imprime cuántos mensajes llegaron y cuánto tardaron;
 - `graficar.py` dibuja las trayectorias y las estimaciones en `escena.png`.
 
+`graficar.py` también acepta `--salida ruta.png` y `--titulo "texto"` para personalizar esa figura.
+Después de generar los CSV de los escenarios E1–E4, ejecuta `python analisis/graficas_comparativas.py`
+para crear las figuras del informe y calcular intervalos de confianza del 95% entre réplicas. Las
+figuras quedan en `entregables/f-experimentacion/figuras/` y cada escenario recibe
+`resultados/<escenario>/intervalos_confianza.csv`.
+
 Para el experimento completo, con réplicas y en paralelo:
 
 ```bash

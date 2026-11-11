@@ -1,0 +1,1 @@
+analisis/experimento.py --nombre E3-sombreado-alto --reps 10 --routing aodv olsr dsdv --jobs 20 --sin-compilar -- --conf=/mnt/c/Proyectos/ME01-taller01-manets/codigo/escenarios/E3-sombreado-alto.conf
